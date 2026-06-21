@@ -5,7 +5,7 @@ services:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mipasswordseguro123}
       POSTGRES_DB: ${DB_NAME:-video_platform}
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -17,33 +17,31 @@ services:
 
   backend:
     build: ./services
-    ports:
-      - "${PORT:-4000}:4000"
     environment:
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${DB_USER:-postgres}
-      DB_PASS: ${DB_PASSWORD:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_PASS: ${DB_PASSWORD:-mipasswordseguro123}
       DB_NAME: ${DB_NAME:-video_platform}
-      JWT_SECRET: ${JWT_SECRET:-supersecret}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      ALLOWED_ORIGINS: "*"
+      JWT_SECRET: ${JWT_SECRET:-secret_key_change_me}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      ALLOWED_ORIGINS: "*"
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - ./private_videos:/app/private_videos # Persistencia de los vídeos transcodificados
+      - video_storage:/app/private_videos # Encapsulado en volumen nombrado
 
   frontend:
     build: ./frontend
     ports:
-      - "3001:80"
+      - "3002:80" # Puerto diferente para no chocar con el original
     depends_on:
       - backend
+    volumes:
+      - video_storage:/usr/share/nginx/html/protected_videos:ro # Nginx lee directo del volumen (Alto Rendimiento)
 
 volumes:
   pgdata:
+  video_storage: # El microservicio ahora es dueño de su propio disco virtual
