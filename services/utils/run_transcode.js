@@ -3,8 +3,13 @@ const path = require('path');
 const fs = require('fs');
 
 const processVideoToHLS = (inputPath, videoId) => {
-  // RUTA ABSOLUTA CORRECTA PARA DOCKER
-  const outputDir = path.join('/app', 'private_videos', videoId);
+  // Aseguramos que la ruta base existe dentro de la aplicación
+  const baseDir = '/app/private_videos';
+  if (!fs.existsSync(baseDir)) {
+    fs.mkdirSync(baseDir, { recursive: true });
+  }
+
+  const outputDir = path.join(baseDir, videoId);
   
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -21,13 +26,13 @@ const processVideoToHLS = (inputPath, videoId) => {
         '-f hls'
       ])
       .output(path.join(outputDir, 'index.m3u8'))
-      .on('start', (cmd) => console.log('Ffmpeg started:', videoId))
+      .on('start', (cmd) => console.log('Microservice Ffmpeg started:', videoId))
       .on('end', () => {
-        console.log('Transcoding finished:', videoId);
+        console.log('Microservice Transcoding finished:', videoId);
         resolve(path.join(outputDir, 'index.m3u8'));
       })
       .on('error', (err) => {
-        console.error('Ffmpeg Error:', err);
+        console.error('Microservice Ffmpeg Error:', err);
         reject(err);
       })
       .run();
