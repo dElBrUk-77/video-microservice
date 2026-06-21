@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SuperAdmin - Control Global</title>
+  <link rel="stylesheet" href="design-tokens.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { deep: '#0a0a0a', surface: '#141414', gold: '#d4af37', crimson: '#e50914' }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-deep text-white min-h-screen font-body">
+  <nav class="w-full bg-surface border-b border-white/5 px-8 py-4 flex justify-between items-center sticky top-0 z-50">
+    <div class="text-xl font-display font-bold">SUPER<span class="text-gold">CONTROL</span></div>
+    <div class="flex space-x-4 items-center">
+        <a href="/admin.html" class="text-[10px] bg-gold/10 text-gold px-4 py-2 rounded-full border border-gold/20 font-bold uppercase tracking-widest">Portal Creador</a>
+        <button onclick="logout()" class="text-[10px] text-gray-500 hover:text-crimson uppercase font-bold tracking-widest">Salir</button>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-6 py-12">
+    <header class="flex justify-between items-end mb-12">
+        <div>
+            <h1 class="text-4xl font-display font-bold mb-2 text-white">Gestión de Usuarios</h1>
+            <p class="text-gray-500">Control total sobre identidades, roles y accesos del ecosistema.</p>
+        </div>
+        <button onclick="openModal('create')" class="premium-btn text-xs">+ Nuevo Usuario</button>
+    </header>
+    
+    <div class="bg-surface rounded-xl border border-white/5 overflow-hidden shadow-2xl">
+      <table class="w-full text-left">
+        <thead class="bg-black/50 text-[10px] uppercase text-gray-500 font-bold tracking-widest">
+          <tr>
+            <th class="p-6">ID</th>
+            <th class="p-6">Email</th>
+            <th class="p-6">Rol</th>
+            <th class="p-6">Compañía</th>
+            <th class="p-6">Estado</th>
+            <th class="p-6 text-right">Acción</th>
+          </tr>
+        </thead>
+        <tbody id="users-list" class="divide-y divide-white/5 text-sm"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Usuario (Crear/Editar) -->
+  <div id="user-modal" class="fixed inset-0 bg-black/95 z-[100] hidden flex items-center justify-center p-4">
+    <div class="bg-surface border border-white/10 p-8 rounded-xl w-full max-w-md shadow-2xl">
+      <h2 id="modal-title" class="text-2xl font-display font-bold mb-6 text-white">Usuario</h2>
+      <form id="user-form" class="space-y-4">
+        <input type="hidden" id="field-id">
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Email</label>
+          <input type="email" id="field-email" class="w-full bg-deep border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-gold" required>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Password (Dejar vacío para no cambiar)</label>
+          <input type="password" id="field-pass" class="w-full bg-deep border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-gold">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Rol</label>
+                <select id="field-role" class="w-full bg-deep border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-gold">
+                    <option value="consumer">Consumer</option>
+                    <option value="creator">Creator</option>
+                    <option value="super_admin">SuperAdmin</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Compañía</label>
+                <select id="field-company" class="w-full bg-deep border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-gold">
+                    <option value="">Ninguna</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex items-center justify-between bg-black/20 p-4 rounded-lg">
+          <span class="text-sm font-bold">Membresía Activa</span>
+          <input type="checkbox" id="field-active" class="w-6 h-6 accent-gold">
+        </div>
+        <div class="flex space-x-4 pt-4">
+          <button type="submit" class="flex-1 bg-gold text-black font-bold py-3 rounded-lg hover:bg-yellow-500 transition uppercase text-xs tracking-widest">Guardar</button>
+          <button type="button" onclick="closeModal()" class="flex-1 border border-white/10 py-3 rounded-lg hover:bg-white/5 transition uppercase text-xs tracking-widest">Cerrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    let companies = [];
+    if (!token) location.href = '/';
+
+    async function init() {
+      const resC = await fetch('/api/super/companies', { headers: { 'Authorization': `Bearer ${token}` } });
+      companies = await resC.json();
+      const cSelect = document.getElementById('field-company');
+      cSelect.innerHTML += companies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      loadUsers();
+    }
+
+    async function loadUsers() {
+      const res = await fetch('/api/super/users', { headers: { 'Authorization': `Bearer ${token}` } });
+      const users = await res.json();
+      const tbody = document.getElementById('users-list');
+      tbody.innerHTML = users.map(u => `
+        <tr class="hover:bg-white/5 transition group">
+          <td class="p-6 text-gray-500 text-xs font-mono">#${u.id}</td>
+          <td class="p-6 font-bold text-white">${u.email}</td>
+          <td class="p-6"><span class="px-2 py-1 bg-white/5 rounded text-[10px] uppercase font-bold tracking-tighter text-gold">${u.role}</span></td>
+          <td class="p-6 text-gray-400 text-xs">${u.company_name || '—'}</td>
+          <td class="p-6">
+            ${u.membership_active ? '<span class="text-green-500 text-[10px] font-bold uppercase">● Activo</span>' : '<span class="text-gray-600 text-[10px] font-bold uppercase">○ Inactivo</span>'}
+          </td>
+          <td class="p-6 text-right">
+            <button onclick='openModal("edit", ${JSON.stringify(u)})' class="text-gold text-xs font-bold hover:underline opacity-0 group-hover:opacity-100 transition">EDITAR</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openModal(mode, user = null) {
+      document.getElementById('modal-title').innerText = mode === 'create' ? 'Crear Nuevo Usuario' : 'Editar Usuario';
+      document.getElementById('field-id').value = user ? user.id : '';
+      document.getElementById('field-email').value = user ? user.email : '';
+      document.getElementById('field-pass').value = '';
+      document.getElementById('field-role').value = user ? user.role : 'consumer';
+      document.getElementById('field-company').value = user ? (user.company_id || '') : '';
+      document.getElementById('field-active').checked = user ? user.membership_active : false;
+      document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('user-modal').classList.add('hidden'); }
+
+    document.getElementById('user-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('field-id').value;
+      const data = {
+        email: document.getElementById('field-email').value,
+        password: document.getElementById('field-pass').value,
+        role: document.getElementById('field-role').value,
+        company_id: document.getElementById('field-company').value,
+        membership_active: document.getElementById('field-active').checked
+      };
+
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/super/users/${id}` : '/api/super/users';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        closeModal();
+        loadUsers();
+      } else { alert('Error al procesar usuario'); }
+    });
+
+    function logout() { localStorage.removeItem('token'); location.href = '/'; }
+    init();
+  </script>
+</body>
+</html>

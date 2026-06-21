@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CreatorVOD - Bienvenidos</title>
+  <link rel="stylesheet" href="design-tokens.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { deep: '#0a0a0a', surface: '#141414', gold: '#d4af37', crimson: '#e50914' },
+          fontFamily: { display: ['"Space Grotesk"', 'sans-serif'], body: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-deep text-white min-h-screen font-body flex flex-col">
+
+  <!-- Landing Gate -->
+  <div id="landing-gate" class="hidden flex-1 flex flex-col items-center justify-center px-4 py-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gold/10 via-transparent to-transparent">
+    <div class="text-center mb-12">
+        <h1 class="text-6xl font-display font-bold tracking-tighter mb-4">CREATOR<span class="text-gold">VOD</span></h1>
+        <p class="text-gray-400 text-xl max-w-lg mx-auto">La plataforma premium donde el conocimiento se protege y se comparte.</p>
+    </div>
+    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+        <button onclick="showAuth('login')" class="premium-btn px-12 py-4 text-lg">Ya soy Alumno</button>
+        <button onclick="showAuth('register')" class="bg-white/5 border border-white/10 hover:bg-white/10 px-12 py-4 text-lg rounded-full font-display font-bold transition">Nuevo Registro</button>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app-container" class="hidden flex-1 flex flex-col">
+    <nav class="fixed w-full z-50 flex items-center justify-between px-8 py-4 bg-black/90 backdrop-blur-md border-b border-white/5">
+        <div class="text-2xl font-display font-bold tracking-tighter cursor-pointer" onclick="location.reload()">CREATOR<span class="text-gold">VOD</span></div>
+        <div class="flex items-center space-x-6">
+          <div id="user-info" class="flex items-center space-x-4">
+            <a href="/admin.html" id="admin-nav-btn" class="text-xs text-gold uppercase tracking-widest hover:text-white transition hidden">Portal Creador</a>
+            <a href="/super.html" id="super-nav-btn" class="text-xs text-crimson uppercase tracking-widest hover:text-white transition hidden">Panel Control</a>
+            <span id="user-name" class="text-gray-400 text-sm font-display"></span>
+            <button onclick="logout()" class="text-xs text-crimson uppercase tracking-widest hover:text-white transition">Salir</button>
+          </div>
+        </div>
+    </nav>
+    <main class="pt-24 px-8 pb-12 grid grid-cols-12 gap-8 flex-1">
+        <!-- Player Column -->
+        <div class="col-span-12 lg:col-span-8 space-y-6">
+          <div class="relative aspect-video bg-black rounded-lg overflow-hidden border border-white/5 shadow-2xl">
+            <video id="main-player" class="w-full h-full" controls autoplay></video>
+            <div id="player-placeholder" class="absolute inset-0 flex items-center justify-center bg-surface">
+              <p class="text-gray-500 font-display italic">Selecciona una lección para comenzar</p>
+            </div>
+            <!-- Paywall Overlay -->
+            <div id="membership-lock" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center hidden z-30">
+                <svg class="w-16 h-16 text-gold mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <h2 class="text-2xl font-display font-bold">Acceso Restringido</h2>
+                <p class="text-gray-400 mt-2">Tu suscripción no está activa actualmente.</p>
+            </div>
+          </div>
+
+          <!-- Video Info & Social (RESTAURADO) -->
+          <div id="video-details" class="hidden animate-fade-in">
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                <h1 id="active-title" class="text-3xl font-display font-bold text-white"></h1>
+                <p id="active-desc" class="text-gray-400 mt-2 max-w-2xl text-sm"></p>
+              </div>
+              <div class="flex space-x-3">
+                <button onclick="interact('favorite')" class="p-3 bg-surface border border-white/10 rounded-full hover:border-gold transition">
+                  <svg id="icon-fav" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                </button>
+                <button onclick="interact('like')" class="p-3 bg-surface border border-white/10 rounded-full hover:border-gold transition">
+                  <svg id="icon-like" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 10h4.708a2 2 0 011.965 2.392l-1.55 7A2 2 0 0117.158 21H7a2 2 0 01-2-2V9a2 2 0 012-2h2.292l3.208-4.812a1.5 1.5 0 012.5 1.5V10z"></path></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Muro de Comentarios Reales -->
+            <div class="border-t border-white/5 pt-8">
+              <h3 class="font-display font-bold text-lg mb-6">Comunidad y Notas</h3>
+              <div class="flex space-x-4 mb-8">
+                <div class="w-10 h-10 rounded-full bg-surface border border-white/10 flex items-center justify-center font-bold text-xs text-gold">U</div>
+                <div class="flex-1 space-y-3">
+                  <textarea id="comment-input" class="w-full bg-surface border border-white/10 rounded-lg p-4 text-sm text-gray-300 outline-none focus:border-gold h-20" placeholder="Escribe un comentario..."></textarea>
+                  <button onclick="postComment()" class="bg-gold text-black font-bold px-6 py-2 rounded text-xs hover:bg-yellow-500 transition">PUBLICAR</button>
+                </div>
+              </div>
+              <div id="comments-container" class="space-y-6"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Playlist Column -->
+        <div class="col-span-12 lg:col-span-4 space-y-6">
+          <div class="flex border-b border-white/5">
+            <button id="tab-all" onclick="setTab('all')" class="flex-1 py-3 text-xs font-bold uppercase tracking-widest border-b-2 border-gold text-white">Explorar</button>
+            <button id="tab-favs" onclick="setTab('favs')" class="flex-1 py-3 text-xs font-bold uppercase tracking-widest border-b-2 border-transparent text-gray-500 hover:text-white transition">Favoritos</button>
+          </div>
+          <div id="video-list-container" class="relative">
+              <div id="video-list" class="space-y-4 max-h-[70vh] overflow-y-auto pr-2"></div>
+              <div id="list-lock-overlay" class="absolute inset-0 bg-deep/60 backdrop-blur-sm flex items-center justify-center hidden rounded-xl">
+                  <span class="bg-crimson/20 text-crimson border border-crimson/50 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest">Suscripción Inactiva</span>
+              </div>
+          </div>
+        </div>
+    </main>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/95 z-[100] hidden flex items-center justify-center p-4">
+    <div class="bg-surface border border-white/10 p-10 rounded-2xl w-full max-w-md shadow-2xl relative">
+        <button onclick="document.getElementById('auth-modal').classList.add('hidden')" class="absolute top-6 right-6 text-gray-500 hover:text-white">✕</button>
+        <h2 id="auth-title" class="text-2xl font-display font-bold mb-8 text-white">Acceso</h2>
+        <form id="auth-form" class="space-y-4">
+            <input type="email" id="auth-email" placeholder="Email" class="w-full bg-deep border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-gold" required>
+            <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full bg-deep border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-gold text-white" required>
+            <div id="register-fields" class="hidden">
+                <select id="auth-company" class="w-full bg-deep border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-gold text-white">
+                    <option value="1">Caruncho Academy</option>
+                </select>
+            </div>
+            <p id="auth-error" class="text-crimson text-xs hidden"></p>
+            <button type="submit" class="w-full bg-gold text-black font-bold py-4 rounded-lg transition uppercase text-xs tracking-widest">Continuar</button>
+        </form>
+    </div>
+  </div>
+
+  <script>
+    let hls = null;
+    let activeVideoId = null;
+    let currentTab = 'all';
+    let userRole = null;
+    const token = localStorage.getItem('token');
+
+    async function init() {
+      if (!token) {
+        document.getElementById('landing-gate').classList.remove('hidden');
+        return;
+      }
+      
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userRole = payload.role;
+      document.getElementById('app-container').classList.remove('hidden');
+      document.getElementById('user-name').innerText = payload.email;
+
+      if (payload.role === 'creator' || payload.role === 'super_admin') document.getElementById('admin-nav-btn').classList.remove('hidden');
+      if (payload.role === 'super_admin') document.getElementById('super-nav-btn').classList.remove('hidden');
+      
+      if (!payload.membershipActive && payload.role === 'consumer') {
+          document.getElementById('list-lock-overlay').classList.remove('hidden');
+          document.getElementById('membership-lock').classList.remove('hidden');
+          document.getElementById('player-placeholder').classList.add('hidden');
+          return;
+      }
+      loadVideos();
+    }
+
+    async function loadVideos() {
+      const endpoint = currentTab === 'all' ? '/api/videos' : '/api/social/favorites';
+      const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
+      const videos = await res.json();
+      const list = document.getElementById('video-list');
+      list.innerHTML = videos.length ? videos.map(v => `
+        <div onclick='selectVideo(${JSON.stringify(v)})' class="bg-surface border border-white/5 p-4 rounded-lg cursor-pointer hover:bg-white/5 transition flex space-x-4">
+          <div class="w-24 aspect-video bg-deep rounded flex items-center justify-center"><svg class="w-6 h-6 text-white/10" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg></div>
+          <div><h4 class="font-bold text-xs">${v.title}</h4></div>
+        </div>
+      `).join('') : '<p class="text-center p-8 text-gray-600 text-xs italic">Nada aquí...</p>';
+    }
+
+    function setTab(tab) {
+      currentTab = tab;
+      document.getElementById('tab-all').className = `flex-1 py-3 text-xs font-bold uppercase tracking-widest border-b-2 ${tab === 'all' ? 'border-gold text-white' : 'border-transparent text-gray-500'}`;
+      document.getElementById('tab-favs').className = `flex-1 py-3 text-xs font-bold uppercase tracking-widest border-b-2 ${tab === 'favs' ? 'border-gold text-white' : 'border-transparent text-gray-500'}`;
+      loadVideos();
+    }
+
+    async function selectVideo(v) {
+      activeVideoId = v.id;
+      document.getElementById('player-placeholder').classList.add('hidden');
+      document.getElementById('video-details').classList.remove('hidden');
+      document.getElementById('active-title').innerText = v.title;
+      document.getElementById('active-desc').innerText = v.description;
+      
+      if (hls) hls.destroy();
+      if (Hls.isSupported()) {
+        hls = new Hls({ xhrSetup: xhr => xhr.setRequestHeader('Authorization', `Bearer ${token}`) });
+        hls.loadSource(`/api/videos/stream/${v.url}/index.m3u8`);
+        hls.attachMedia(document.getElementById('main-player'));
+        document.getElementById('main-player').play();
+      }
+      loadComments();
+      updateInteractionUI();
+    }
+
+    async function updateInteractionUI() {
+      const res = await fetch(`/api/social/${activeVideoId}/status`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const status = await res.json();
+      const fav = document.getElementById('icon-fav');
+      const like = document.getElementById('icon-like');
+      fav.setAttribute('fill', status.is_favorite ? 'currentColor' : 'none');
+      fav.classList.toggle('text-gold', status.is_favorite);
+      like.setAttribute('fill', status.liked ? 'currentColor' : 'none');
+      like.classList.toggle('text-gold', status.liked);
+    }
+
+    async function interact(type) {
+      await fetch(`/api/social/${activeVideoId}/interact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ type })
+      });
+      updateInteractionUI();
+      if (currentTab === 'favs') loadVideos();
+    }
+
+    async function loadComments() {
+      const res = await fetch(`/api/social/${activeVideoId}/comments`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const comments = await res.json();
+      const container = document.getElementById('comments-container');
+      container.innerHTML = comments.map(c => `
+        <div class="flex space-x-4">
+          <div class="w-8 h-8 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center text-[10px] font-bold text-gold">${c.author_email.charAt(0).toUpperCase()}</div>
+          <div class="flex-1 bg-white/5 p-4 rounded-lg border border-white/5">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${c.author_email}</span>
+            <p class="text-sm text-gray-300 leading-relaxed">${c.content}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function postComment() {
+      const content = document.getElementById('comment-input').value;
+      if (!content) return;
+      await fetch(`/api/social/${activeVideoId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ content })
+      });
+      document.getElementById('comment-input').value = '';
+      loadComments();
+    }
+
+    function showAuth(mode) {
+      currentMode = mode;
+      document.getElementById('auth-title').innerText = mode === 'login' ? 'Bienvenido' : 'Crear Cuenta';
+      document.getElementById('register-fields').classList.toggle('hidden', mode === 'login');
+      document.getElementById('auth-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = currentMode === 'login' ? '/auth/login' : '/auth/register';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            email: document.getElementById('auth-email').value, 
+            password: document.getElementById('auth-pass').value,
+            companyId: document.getElementById('auth-company').value 
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        const p = JSON.parse(atob(data.token.split('.')[1]));
+        if (p.role === 'super_admin') location.href = '/super.html';
+        else if (p.role === 'creator') location.href = '/admin.html';
+        else location.reload();
+      } else {
+        const errEl = document.getElementById('auth-error');
+        errEl.innerText = data.error;
+        errEl.classList.remove('hidden');
+      }
+    });
+
+    function logout() { localStorage.removeItem('token'); location.href = '/'; }
+    init();
+  </script>
+</body>
+</html>

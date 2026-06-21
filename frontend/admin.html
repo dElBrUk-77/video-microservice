@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Portal Creador - Gestión B2B2C</title>
+  <link rel="stylesheet" href="design-tokens.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { deep: '#0a0a0a', surface: '#141414', gold: '#d4af37', crimson: '#e50914' },
+          fontFamily: { display: ['"Space Grotesk"', 'sans-serif'], body: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-deep text-white font-body min-h-screen">
+  
+  <nav class="w-full bg-surface border-b border-white/5 px-8 py-4 flex justify-between items-center sticky top-0 z-50 backdrop-blur-lg">
+    <div class="text-xl font-display font-bold">CREATOR<span class="text-gold">STUDIO</span></div>
+    <div class="flex items-center space-x-6">
+      <span id="role-badge" class="px-3 py-1 rounded-full bg-gold/10 text-gold text-[10px] font-bold tracking-widest border border-gold/20 uppercase">Cargando...</span>
+      <a href="/" class="text-gray-400 hover:text-white text-sm transition">← Ver Plataforma</a>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-6 py-12">
+    <header class="flex justify-between items-end mb-12">
+      <div>
+        <h1 class="text-5xl font-display font-bold tracking-tighter">Panel de <span class="text-gold">Gestión</span></h1>
+        <p class="text-gray-500 mt-2 text-lg">Administra el contenido real de la base de datos.</p>
+      </div>
+      <button onclick="openUploadModal()" class="premium-btn text-sm">+ Subir Nuevo Video</button>
+    </header>
+
+    <!-- Modal Subida -->
+    <div id="upload-modal" class="fixed inset-0 bg-black/90 z-[110] hidden flex items-center justify-center p-4">
+      <div class="bg-surface border border-white/10 p-8 rounded-xl w-full max-w-lg shadow-2xl">
+        <h2 class="text-2xl font-display font-bold mb-2">Nuevo Contenido</h2>
+        <p class="text-gray-500 text-sm mb-6">Sincronizado con el sistema de archivos HLS.</p>
+        
+        <form id="upload-form" class="space-y-4">
+          <div id="company-selector-container" class="hidden">
+            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Asignar a Compañía (Solo Superadmin)</label>
+            <select id="up-company" class="w-full bg-deep border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-gold"></select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Título del Vídeo</label>
+            <input type="text" id="up-title" class="w-full bg-deep border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-gold" required>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Archivo MP4</label>
+            <input type="file" id="up-file" accept="video/mp4" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gold/10 file:text-gold hover:file:bg-gold/20" required>
+          </div>
+          <div id="upload-progress-container" class="hidden">
+            <div class="flex justify-between text-[10px] mb-1 uppercase font-bold text-gold">
+              <span>Transcodificando...</span>
+              <span id="progress-percent">0%</span>
+            </div>
+            <div class="w-full bg-deep h-1 rounded-full overflow-hidden">
+              <div id="progress-bar" class="bg-gold h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="flex space-x-4 pt-4">
+            <button type="submit" id="up-submit-btn" class="flex-1 bg-gold text-black font-bold py-3 rounded-lg hover:bg-yellow-500 transition">INICIAR SUBIDA</button>
+            <button type="button" onclick="document.getElementById('upload-modal').classList.add('hidden')" class="flex-1 border border-white/10 py-3 rounded-lg hover:bg-white/5 transition">CANCELAR</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="video-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+  </div>
+
+  <!-- Modal Edición -->
+  <div id="edit-modal" class="fixed inset-0 bg-black/90 z-[100] hidden flex items-center justify-center p-4">
+    <div class="bg-surface border border-white/10 p-8 rounded-xl w-full max-w-lg shadow-2xl">
+      <h2 class="text-2xl font-display font-bold mb-6">Editar Contenido</h2>
+      <div class="space-y-6">
+        <div><label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Notas del Creador</label>
+        <textarea id="edit-notes" class="w-full bg-deep border border-white/10 rounded-lg p-4 text-sm text-gray-300 outline-none focus:border-gold h-32"></textarea></div>
+        <div class="flex items-center justify-between bg-black/20 p-4 rounded-lg">
+          <span class="text-sm font-bold">Publicar</span>
+          <input type="checkbox" id="edit-published" class="w-6 h-6 accent-gold">
+        </div>
+        <div class="flex space-x-4 pt-4">
+          <button onclick="saveVideo()" class="flex-1 bg-gold text-black font-bold py-3 rounded-lg hover:bg-yellow-500 transition">GUARDAR</button>
+          <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 border border-white/10 py-3 rounded-lg hover:bg-white/5 transition">CANCELAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    let currentEditingId = null;
+    let userRole = null;
+
+    if (!token) location.href = '/';
+
+    async function init() {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userRole = payload.role;
+      document.getElementById('role-badge').innerText = userRole === 'super_admin' ? 'Superadmin' : 'Creador';
+      loadDashboard();
+    }
+
+    async function loadDashboard() {
+      const res = await fetch('/api/admin/dashboard', { headers: { 'Authorization': `Bearer ${token}` } });
+      const videos = await res.json();
+      const grid = document.getElementById('video-grid');
+      
+      if (videos.length === 0) {
+        grid.innerHTML = '<div class="col-span-full p-12 text-center text-gray-500">Sin videos en esta compañía.</div>';
+        return;
+      }
+
+      grid.innerHTML = videos.map(v => `
+        <div class="bg-surface border border-white/5 rounded-xl overflow-hidden shadow-lg">
+          <div class="aspect-video bg-deep flex items-center justify-center relative">
+            <span class="text-[8px] bg-black/50 px-2 py-1 rounded absolute top-2 left-2 text-gray-400">ID: ${v.id}</span>
+            ${!v.is_published ? '<div class="absolute top-2 right-2 px-2 py-1 bg-crimson text-[8px] font-bold rounded">OCULTO</div>' : '<div class="absolute top-2 right-2 px-2 py-1 bg-green-600 text-[8px] font-bold rounded">PÚBLICO</div>'}
+            <svg class="w-10 h-10 text-white/5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+          </div>
+          <div class="p-6">
+            <h3 class="font-bold truncate">${v.title}</h3>
+            <p class="text-xs text-gray-500 mt-2 line-clamp-1">${v.creator_notes || 'Sin notas...'}</p>
+            <div class="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
+                <span class="text-[10px] text-gray-400 font-bold uppercase">Likes: ${v.likes || 0}</span>
+                <button onclick='openEdit(${JSON.stringify(v)})' class="text-gold text-xs font-bold uppercase hover:underline">Gestionar</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function openUploadModal() {
+      if (userRole === 'super_admin') {
+        const res = await fetch('/api/super/companies', { headers: { 'Authorization': `Bearer ${token}` } });
+        const companies = await res.json();
+        const select = document.getElementById('up-company');
+        select.innerHTML = companies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        document.getElementById('company-selector-container').classList.remove('hidden');
+      }
+      document.getElementById('upload-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append('title', document.getElementById('up-title').value);
+      formData.append('video', document.getElementById('up-file').files[0]);
+      if (userRole === 'super_admin') formData.append('companyId', document.getElementById('up-company').value);
+
+      document.getElementById('upload-progress-container').classList.remove('hidden');
+      const res = await fetch('/api/admin/videos/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      if (res.ok) {
+        document.getElementById('upload-modal').classList.add('hidden');
+        loadDashboard();
+      } else { alert('Error al subir'); }
+    });
+
+    function openEdit(v) {
+      currentEditingId = v.id;
+      document.getElementById('edit-notes').value = v.creator_notes || '';
+      document.getElementById('edit-published').checked = v.is_published;
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    async function saveVideo() {
+      await fetch(`/api/admin/videos/${currentEditingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ 
+          is_published: document.getElementById('edit-published').checked, 
+          creator_notes: document.getElementById('edit-notes').value 
+        })
+      });
+      document.getElementById('edit-modal').classList.add('hidden');
+      loadDashboard();
+    }
+
+    init();
+  </script>
+</body>
+</html>
