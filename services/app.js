@@ -22,6 +22,7 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 // Rutas
+app.get('/', (req, res) => res.status(200).send('API operativa'));
 app.use('/auth', authRoutes);
 app.use('/videos', videoRoutes);
 app.use('/admin', adminRoutes);
