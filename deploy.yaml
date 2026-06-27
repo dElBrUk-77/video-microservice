@@ -1,0 +1,5 @@
+service: video-microservice
+region: europe-west1
+port: 3000
+public: true
+artifact_repo: video-repo
