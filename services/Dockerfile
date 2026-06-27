@@ -18,4 +18,4 @@ RUN chown -R node:node /app
 USER node
 
 EXPOSE 4000
-CMD ["npm", "start"]
+CMD ["node", "index.js"]
